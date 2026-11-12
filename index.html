@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kirpitch.dev: datasheets in, KiCad parts out</title>
+  <meta name="description" content="kirpitch turns component datasheets into reviewed KiCad parts. Open source, in development.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap topbar">
+      <a class="logo" href="/">kirpitch<span>.dev</span></a>
+      <button class="theme" type="button" aria-label="Switch between light and dark theme" title="Light / dark">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="rim" cx="12" cy="12" r="9.5"/><path class="half" d="M12 2.5a9.5 9.5 0 0 0 0 19z"/><circle class="pin" cx="12" cy="6" r="1.5"/></svg>
+      </button>
+    </div>
+  </header>
+  <script>
+    (function () {
+      var r = document.documentElement, k = "theme";
+      try { var s = localStorage.getItem(k); if (s) r.dataset.theme = s; } catch (e) {}
+      document.addEventListener("click", function (e) {
+        var b = e.target.closest(".theme"); if (!b) return;
+        var dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        var next = dark ? "light" : "dark";
+        var apply = function () { r.dataset.theme = next; try { localStorage.setItem(k, next); } catch (e2) {} };
+        if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) { apply(); return; }
+        /* the new theme spreads outward from the button as a wave */
+        var rc = b.getBoundingClientRect(), x = rc.left + rc.width / 2, y = rc.top + rc.height / 2;
+        var end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+        var tr = document.startViewTransition(apply);
+        tr.ready.then(function () {
+          r.animate({ clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + end + "px at " + x + "px " + y + "px)"] },
+            { duration: 750, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" });
+          var ring = document.createElement("div"); ring.className = "wave"; ring.style.left = x + "px"; ring.style.top = y + "px";
+          document.body.appendChild(ring);
+          ring.animate({ transform: ["translate(-50%,-50%) scale(0)", "translate(-50%,-50%) scale(" + (2 * end / 100) + ")"], opacity: [0.9, 0] },
+            { duration: 750, easing: "cubic-bezier(.4,0,.2,1)" }).onfinish = function () { ring.remove(); };
+        });
+      });
+    })();
+  </script>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Datasheets in. <span class="nb">KiCad parts out.</span></h1>
+      <p class="lead">kirpitch reads a component datasheet and builds the KiCad symbol, footprint, 3D model and SPICE model, so you can review them instead of drawing them. Open source.</p>
+      <p><a class="button" href="https://github.com/cocan-dev/kirpitch">Follow it on GitHub</a></p>
+      <p class="status"><span class="dot"></span>In development. There is no release yet.</p>
+    </section>
+
+    <section>
+      <h2 id="how">How it will work</h2>
+      <ol class="steps">
+        <li><span class="n">01</span><h3>Read</h3><p>You give it a datasheet. It finds the pinout, the package and the electrical limits.</p></li>
+        <li><span class="n">02</span><h3>Extract</h3><p>A language model pulls out the data, from any provider you choose, or none. Plain rules also work.</p></li>
+        <li><span class="n">03</span><h3>Build</h3><p>Ordinary code draws the geometry. The model never draws a shape.</p></li>
+        <li><span class="n">04</span><h3>Review</h3><p>You check the result after every stage, before anything reaches your library.</p></li>
+      </ol>
+      <p class="more">Targets KiCad 8, 9 and 10. Desktop app and command line.</p>
+    </section>
+
+    <section>
+      <h2 id="name">About the name</h2>
+      <p>From <em>chirpici</em>, the Romanian word for clay bricks. Small parts, made to be stacked. It also hides Ki(Cad) and pitch.</p>
+    </section>
+
+    <section>
+      <h2 id="contact">Contact</h2>
+      <p>Code and issues: <a href="https://github.com/cocan-dev/kirpitch">github.com/cocan-dev/kirpitch</a>. To report a security problem, use the private reporting option in the Security tab of that repository, or write to <a href="mailto:security@cocan.dev">security@cocan.dev</a>.</p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>kirpitch is made by <a href="https://cocan.dev">cocan.dev</a> and licensed GPL-3.0-or-later. This site has no cookies, no analytics and no third-party requests.</p>
+  </footer>
+  <script>
+/* hero background: slow signal lines with data pulses; the pointer acts as a gravity well (canvas, decorative) */
+(function () {
+  var hero = document.querySelector('.hero');
+  var cv = document.createElement('canvas'); cv.className = 'bgc'; cv.setAttribute('aria-hidden', 'true');
+  hero.insertBefore(cv, hero.firstChild);
+  var ctx = cv.getContext('2d'), root = document.documentElement;
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, dpr = 1, cols, visible = true, t0 = performance.now();
+  function hex(s) { s = s.trim(); if (s.length === 4) s = '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3]; return [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)]; }
+  function readColors() {
+    var cs = getComputedStyle(root), bg = hex(cs.getPropertyValue('--bg')), dark = (bg[0] + bg[1] + bg[2]) < 300;
+    cols = { fg: hex(cs.getPropertyValue('--fg')), ac: hex(cs.getPropertyValue('--accent')), alt: dark ? [240, 138, 93] : [194, 65, 12] };
+  }
+  function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  var N = 34;
+  /* gravity: every point is pulled toward the pointer along the line between them; the pull fades with distance,
+     so lines curve concentrically around the pointer like light bending around a mass */
+  var mx = -9999, my = -9999, tx = -9999, ty = -9999, pw = 0, want = 0, A = 0.62, R2 = 230 * 230, px = 0, py = 0;
+  function pt(j, x, t) {
+    var y = H * (0.06 + 0.88 * j / (N - 1)) + 24 * Math.sin(x * 0.0045 + t * 0.18 + j * 0.14) + 10 * Math.sin(x * 0.012 - t * 0.12 + j * 0.31);
+    if (pw > 0.002) {
+      var dx = mx - x, dy = my - y, f = A * pw * Math.exp(-(dx * dx + dy * dy) / R2);
+      x += dx * f; y += dy * f;
+    }
+    px = x; py = y;
+  }
+  if (!reduce) {
+    document.addEventListener('pointermove', function (e) {
+      var r = cv.getBoundingClientRect(); tx = e.clientX - r.left; ty = e.clientY - r.top;
+      want = (ty > -60 && ty < r.height + 60) ? 1 : 0;
+      if (pw < 0.01) { mx = tx; my = ty; }
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', function () { want = 0; });
+  }
+  function ease() { mx += (tx - mx) * 0.16; my += (ty - my) * 0.16; pw += (want - pw) * 0.07; }
+  function draw(t) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    var j, x;
+    if (pw > 0.01) {
+      var g = ctx.createRadialGradient(mx, my, 0, mx, my, 150);
+      g.addColorStop(0, rgba(cols.ac, 0.09 * pw)); g.addColorStop(1, rgba(cols.ac, 0));
+      ctx.fillStyle = g; ctx.fillRect(mx - 150, my - 150, 300, 300);
+    }
+    ctx.lineWidth = 1; ctx.strokeStyle = rgba(cols.fg, 0.085);
+    for (j = 0; j < N; j++) {
+      ctx.beginPath();
+      for (x = 0; x <= W + 6; x += 6) { pt(j, x, t); if (x === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    if (reduce) return;
+    for (var p = 0; p < 7; p++) {
+      j = (p * 5 + 2) % N;
+      var head = (((t * (0.05 + (p % 3) * 0.015) + p * 0.19) % 1.4) - 0.2) * W, col = p % 3 === 1 ? cols.alt : cols.ac;
+      for (var s = 0; s < 14; s++) {
+        var x0 = head - s * 12, x1 = x0 - 12; if (x1 < 0 || x0 > W) continue;
+        ctx.strokeStyle = rgba(col, 0.75 * (1 - s / 14)); ctx.lineWidth = 1.8;
+        ctx.beginPath(); pt(j, x0, t); ctx.moveTo(px, py); pt(j, x1, t); ctx.lineTo(px, py); ctx.stroke();
+      }
+    }
+  }
+  function frame(now) { ease(); if (visible) draw((now - t0) / 1000); if (!reduce) requestAnimationFrame(frame); }
+  function resize() { dpr = Math.min(devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); readColors(); draw((performance.now() - t0) / 1000); }
+  new ResizeObserver(resize).observe(cv);
+  new MutationObserver(function () { readColors(); if (reduce) draw(0); }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); if (reduce) draw(0); });
+  new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(hero);
+  resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
