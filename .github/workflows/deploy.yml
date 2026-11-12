@@ -3,6 +3,8 @@ name: Deploy site
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"   # weekly: re-checks the privacy promises, keeps the repo active
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check the privacy promises
+        run: python3 scripts/check_claims.py --live https://kirpitch.dev/
       - name: Collect site files
         run: |
           mkdir _site
