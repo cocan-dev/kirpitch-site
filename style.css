@@ -189,3 +189,4 @@ body { overflow-x: clip; }
 .status .dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #f08a5d; box-shadow: 0 0 0 0 color-mix(in srgb, #f08a5d 60%, transparent); animation: ping 2.4s ease-out infinite; }
 @keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, #f08a5d 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
 @media (prefers-reduced-motion: reduce) { .status .dot { animation: none; } }
+.prose { padding-top: 3rem; } .prose h1 { margin-bottom: 1rem; } .prose h2 { margin-top: 2.2rem; } .prose li { margin: 0 0 0.5rem; } .prose code { font-family: var(--mono); font-size: 0.9em; }
